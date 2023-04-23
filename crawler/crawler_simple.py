@@ -27,27 +27,17 @@ sleepTime = 1
 opts = webdriver.FirefoxOptions()
 opts.add_argument("--private")
 opts.add_argument("--headless")
+opts.set_preference('javascript.enabled', False)
 
 # # initiate browser driver
 # firefox_service = webdriver.firefox.webdriver.Webdriver(executable_path=PATH)
 driver = webdriver.Firefox(options=opts)
 
-# set of scraped links
-scraped = set()
+# set of links
+seen = set()
 
 def scrape_links(url):
 
-    # check URL if already scraped
-    if url in scraped:
-        logging.info("Skipping: %s", url)
-        return 
-    
-    logging.info("Scraping: %s", url)
-
-    # add scraped url to set
-    scraped.add(url)
-
-    # send request to URL
     driver.get(url)
 
     try:
@@ -61,21 +51,20 @@ def scrape_links(url):
         for link in links:
             # obtain links
             href = link.get_attribute("href")
-            if href and href.startswith("http"):
-                scrape_links(href)
-                
-    except Exception as e:
-        # log error and continue scraping
-        logging.debug("Error scraping %s: %s", url, e)
-        return
-
-    finally:
-        logging.debug("Done scraping: %s", url)
+            if href:
+                #print(href)
+                seen.add(href)
+    except:
+        logging.warning(f"error locating {href}")
 
 
 # prompt user for initial URL to scrape
 for i in range(url_start_index, url_end_index):
     scrape_links("http://" + urls[i])
+
+for i in seen:
+    driver.get(i)
+    logging.info(i)
 
 # terminate browser
 driver.quit()
