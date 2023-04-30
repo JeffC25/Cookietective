@@ -2,3 +2,4 @@ scraped_urls.db
 geckodriver
 chromedriver
 .log
+.tar

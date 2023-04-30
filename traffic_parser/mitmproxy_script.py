@@ -18,19 +18,19 @@ def response(flow: http.HTTPFlow) -> None:
         # Parse through each Set-Cookie header found in the HTTPS packet
         for set_cookie_header in set_cookie_headers:
             cookies = set_cookie_header.split(";")
-            Secure = False
-            httpOnly = False
+            # Secure = False
+            # httpOnly = False
             domain = ""
 
             # Parse through each value in the Set-Cookie header and write values to file
             for cookie in cookies:
                 # Check if any of the current header values are secure, httponly, or domain attributes
                 if (cookie):
-                    if (cookie == " Secure"):
-                        Secure = True
-                    if (cookie == " HttpOnly"):
-                        httpOnly = True
+                    # if (cookie == " Secure"):
+                    #     Secure = True
+                    # if (cookie == " HttpOnly"):
+                    #     httpOnly = True
                     if ("domain=" in cookie):
                         domain = cookie[8:]
                 
-                sql.insertCookieEntry(src_domain, src_ip, domain, httpOnly, Secure)
+                sql.insertCookieEntry(src_domain, src_ip, domain)

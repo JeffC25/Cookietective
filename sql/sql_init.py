@@ -9,6 +9,8 @@ cur.execute("""CREATE TABLE CNAMEpackets (
     sourceAddress text,
     CNAMEAlias text,
     hasAType int,
+    originalURL text DEFAULT NULL,
+    whoisAnalysis int,
     UNIQUE(domainName, sourceAddress, CNAMEAlias, hasAType)
     )""")
 
@@ -24,10 +26,31 @@ cur.execute("""CREATE TABLE cookie (
     domainName text NOT NULL,
     sourceAddress text NOT NULL,
     domain_setting text NOT NULL,
-    httponly int,
-    secure int,
-    UNIQUE(domainName, sourceAddress, domain_setting, httponly, secure)
+    originalURL text DEFAULT NULL,
+    UNIQUE(domainName, sourceAddress, domain_setting)
     )""")
+
+# Initialize the findings table that stores output of the compiledDatabase analysis
+cur.execute("""CREATE TABLE findings (
+    originalURL text NOT NULL,
+    domainName text NOT NULL,
+    domain_setting text DEFAULT NULL,
+    party int,
+    vuln int,
+    majmill int,
+    notrack int,
+    UNIQUE(originalURL, domainName)
+    )""")
+
+# cur.execute("""CREATE TABLE cookie (
+#     domainName text NOT NULL,
+#     sourceAddress text NOT NULL,
+#     domain_setting text NOT NULL,
+#     httponly int,
+#     secure int,
+#     originalURL text DEFAULT NULL,
+#     UNIQUE(domainName, sourceAddress, domain_setting, httponly, secure, originalURL)
+#     )""")
 
 conn.commit()
 conn.close()
