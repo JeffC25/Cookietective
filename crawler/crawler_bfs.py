@@ -34,9 +34,14 @@ opts.add_argument("--private")
 opts.add_argument("--headless")
 opts.set_preference('javascript.enabled', False)
 opts.set_preference('network.trr.mode', 5)
+opts.set_preference("permissions.default.image", 2)
+opts.set_preference("http.response.timeout", scan_time)
 
 # initiate browser driver
 driver = webdriver.Firefox(options=opts)
+
+# counter for links scanned
+counter = 0
 
 def scrape_links(url, stop_time):  
     print("--" + url.strip('\n') + "--")
@@ -60,6 +65,7 @@ def scrape_links(url, stop_time):
 
         # send request to URL
         driver.get(h)
+        counter += 1
 
         try:
             # wait for HTML element with anchor tag to load
@@ -96,7 +102,14 @@ for i in range(url_start_index, url_end_index):
     logging.debug(f"end time for {urls[i]}: {datetime.datetime.now()}")
 
     # update all currently not claimed SQLite entries as belonging to the current URL
-    sql.insertOriginalURL(urls[i].strip('\n'))
+    try:
+        sql.insertOriginalURL(urls[i].strip('\n'))
+    except:
+        try:
+            sql.insertOriginalURL(urls[i].strip('\n'))
+        except:
+            logging.info("INVALID value: " + urls[i].strip('\n'))
 
 # terminate browser
 driver.quit()
+logging.info(f"counter: {counter}")

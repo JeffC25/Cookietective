@@ -211,7 +211,8 @@ def main():
     );
     """
 
-    DB_file = '../database.db'
+    # DB_file = '../database.db'
+    DB_file = '../sampledatabase.db'
 
     conn = sqlite3.connect(DB_file)
     cur = conn.cursor()
@@ -230,11 +231,11 @@ def main():
 
     cur.execute("SELECT rowid FROM CNAMEpackets")
     c = cur.fetchall()
-    
     thirdparty = 0
     vuln = 0
     scanned = 0
     for m in c:
+        scanned += 1
         rowid = m[0]
         cur.execute("SELECT domainName,originalURL FROM CNAMEpackets WHERE rowid="+str(rowid))
         b = cur.fetchall()
@@ -243,18 +244,36 @@ def main():
         originalURL = str(curr[1])
         cur.execute("SELECT originalURL,domainName FROM findings WHERE originalURL=? AND domainName=?",(originalURL,domainName))
         k = cur.fetchall()
-        if len(k) == 0:
-            continue
+        count = 0
+        if k == 0:
+            count += 1
         else:
-            whoisval = compareWhois(rowid, DB_file)
-            if whoisval == 2:
-                if compare_url(rowid,DB_file) == False:
+            try:
+                whoisval = compareWhois(rowid, DB_file)
+                if whoisval == 2:
+                    if compare_url(rowid,DB_file) == False:
+                        bad_matching, domainset = cookie_check(rowid,DB_file)
+                        if bad_matching == True:
+                            cur.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,domainset,1,1,0,0))
+                            conn.commit()
+                            thirdparty += 1
+                            vuln += 1
+                            print("Vulnerability found for " + originalURL + " from " + domainName)
+                        else:
+                            conn.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,None,1,0,0,0))
+                            conn.commit()
+                            thirdparty += 1
+                    else:
+                        cur.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,None,0,0,0,0))
+                        conn.commit()
+                elif whoisval == 0:
                     bad_matching, domainset = cookie_check(rowid,DB_file)
                     if bad_matching == True:
                         cur.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,domainset,1,1,0,0))
                         conn.commit()
                         thirdparty += 1
                         vuln += 1
+                        print("Vulnerability found for " + originalURL + " from " + domainName)
                     else:
                         conn.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,None,1,0,0,0))
                         conn.commit()
@@ -262,36 +281,63 @@ def main():
                 else:
                     cur.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,None,0,0,0,0))
                     conn.commit()
-            elif whoisval == 0:
-                bad_matching, domainset = cookie_check(rowid,DB_file)
-                if bad_matching == True:
-                    cur.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,domainset,1,1,0,0))
-                    conn.commit()
-                    thirdparty += 1
-                    vuln += 1
+            except:
+                if compare_url(rowid,DB_file) == False:
+                    bad_matching, domainset = cookie_check(rowid,DB_file)
+                    if bad_matching == True:
+                        cur.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,domainset,1,1,0,0))
+                        conn.commit()
+                        thirdparty += 1
+                        vuln += 1
+                        print("Vulnerability found for " + originalURL + " from " + domainName)
+                    else:
+                        conn.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,None,1,0,0,0))
+                        conn.commit()
+                        thirdparty += 1
                 else:
-                    conn.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,None,1,0,0,0))
+                    cur.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,None,0,0,0,0))
                     conn.commit()
-                    thirdparty += 1
-            else:
-                cur.execute("INSERT OR IGNORE INTO findings VALUES (?,?,?,?,?,?,?)",(originalURL,domainName,None,0,0,0,0))
-                conn.commit()
-            scanned += 1
 
+    # cur.execute("SELECT domainName,originalURL,domain_setting FROM findings WHERE party=1 AND vuln=1")
+    # c = cur.fetchall()
+    # for curr in c:
+    #     domainName = curr[0]
+    #     originalURL = str(curr[1])
+    #     domainset = curr[2]
+    #     print("These are vulnerable results: ")
+    #     print(domainName)
+    #     print(originalURL)
+    #     print(domainset)
+    
+    # print("\nThese are the general results of the scan: ")
+    # print("Scanned:               "+str(scanned))
+    # print("Third Party Found:     "+str(thirdparty))
+    # print("Vulnerabilities Found: "+str(vuln))
     cur.execute("SELECT domainName,originalURL,domain_setting FROM findings WHERE party=1 AND vuln=1")
     c = cur.fetchall()
     for curr in c:
         domainName = curr[0]
-        originalURL = str(curr[1])
+        #originalURL = str(curr[1])
         domainset = curr[2]
-        print("These are vulnerable results: ")
+        print("\nThese are vulnerable results: ")
         print(domainName)
-        print(originalURL)
+        #print(originalURL)
         print(domainset)
-        print("\nThese are the general results of the scan: ")
-        print("Scanned:               "+str(scanned))
-        print("Third Party Found:     "+str(thirdparty))
-        print("Vulnerabilities Found: "+str(vuln))
+
+    cur.execute("SELECT domainName,originalURL,domain_setting FROM findings WHERE party=1 AND vuln=0")
+    c = cur.fetchall()
+    thirdparty = len(c)
+
+
+    cur.execute("SELECT domainName,originalURL,domain_setting FROM findings WHERE party=0 AND vuln=0")
+    c = cur.fetchall()
+    scanned = len(c)
+    scanned = scanned + thirdparty + vuln
+    print("\nThese are the general results of the scan: ")
+    print("Scanned:               "+str(scanned))
+    print("Third Party Found:     "+str(thirdparty))
+    print("Vulnerabilities Found: "+str(vuln))
+
     """
         elif whois_res == 1:
             print("NO CLOAKING FOUND\n")
