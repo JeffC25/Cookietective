@@ -1,25 +1,34 @@
 # Cookietective: An Automated Scanner for CNAME Cloaking-based Cookie Leaking
 
+## Table of Contents
+* [Overview](#overview)
+* [Instructions](#instructions)
+* [Motivation](#cname-cloaking)
+* [Implementation](#implementation)
+
+## Overview
 Cookietective consists of three major components. The first is a data-gathering module consisting of a web crawler and two network traffic scanners, which takes in URLs to gather cookie and CNAME information from. The output is then sent to the second portion of this project, the analysis portion. Here, we look specifically at packets which contain a CNAME record to determine whether or not the packet is being sent from first-party to first-party or to a cloaked third party domain. The final portion of our project is an accuracy checker, which we use to attempt to see how many of the websites flagged by our analysis engine were known third party T/A services.
 
-## Setting Up
+## Instructions
+
+### Setting Up
 1. Run `git clone https://github.com/Cybersecurity-Project-Group/Cookietective.git` 
 2. Run `cd Cookietective/`
 3. Install Python dependencies with `install -r requirements.txt` 
 4. Install SQLite3 with `apt-get install sqlite3`
 5. Install [Docker](https://docs.docker.com/engine/install/)
 
-## Running Data-Gathering
+### Running Data-Gathering
 1. Put desired domains into `sample_urls.txt` (currently has the 20,000 top values from Majestic Million).
 2. Specify the number of containers, domains needed to scan, and offset into the URL list in `run_containers.sh` (Default: 8 containers, 3600 URLs, and offset of 0)
 3. Run `bash run_containers.sh` to build and spin Containers and start scanning
 4. After containers have exited, run `bash gather_data.sh` to extract the local databases from exited containers and merge into database.db - NOTE: this currently extracts information from ALL exited containers
 
-## Running Analysis
+### Running Analysis
 1. Run `cd whois_api/`
 2. Run `python3 url_parser.py` to record findings into database.db
 
-## Running Evaluation
+### Running Evaluation
 1. Run `cd comparator/`
 2. Run `python3 comparator.py` to record comparisons into database.db
 
